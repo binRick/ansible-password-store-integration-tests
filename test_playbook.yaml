@@ -1,0 +1,48 @@
+- hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+  tasks:
+    - name: debug
+      when: no
+      with_nested:
+        - [ 'wow', '123' ]
+        - [ 'alice', 'bob' ]
+        - [ 'clientdb', 'employeedb', 'providerdb' ]
+      vars:
+        xxx: 123
+      debug:
+        msg: 'xxxxxxxx'
+
+
+    # Debug is used for acme/sharedpasss, BAD IDEA to show passwords on screen
+    - command:
+        warn: no
+        cmd: pass ls
+      register: p
+    - debug: var=p.stdout
+    - name: Basic lookup. Fails if acme/sharedpass doesn't exist
+      ignore_errors: yes
+      debug:
+        msg: "{{ lookup('passwordstore', 'acme/sharedpass')}}"
+
+    - name: Create pass with random 16 character password. If password exists just give the password
+      debug:
+        var: mypassword
+      vars:
+        mypassword: "{{ lookup('passwordstore', 'acme/sharedpass create=true')}}"
+
+    - name: Different size password
+      debug:
+        msg: "{{ lookup('passwordstore', 'acme/sharedpass create=true length=42')}}"
+
+    - name: Create password and overwrite the password if it exists. As a bonus, this module includes the old password inside the pass file
+      debug:
+        msg: "{{ lookup('passwordstore', 'acme/sharedpass create=true overwrite=true')}}"
+
+    - name: Create an alphanumeric password
+      debug: msg="{{ lookup('passwordstore', 'acme/sharedpass create=true nosymbols=true') }}"
+
+    - name: Return the value for user in the KV pair user, username
+      debug:
+        msg: "{{ lookup('passwordstore', 'acme/sharedpass subkey=user')}}"
